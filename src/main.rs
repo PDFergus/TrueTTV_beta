@@ -22,6 +22,7 @@ struct MyEguiApp{
     font_height:f32,
     command_name:String,
     info_string:String,
+    mp3_path:String,
 }
 
 impl MyEguiApp {
@@ -52,25 +53,30 @@ impl eframe::App for MyEguiApp{
            // if ui.add_sized([400.0, 400.0], button.clicked()){
             //.button("start bots").clicked() {
              //   let mut thinggy = 0;
+            ui.heading("Quick Settings");
             ui.add_space(10.0);
             let mut bot_start =ui.add_sized([200.0, 100.0], egui::Button::new("Start Bots"));
             if bot_start.clicked(){
                 let mut thingy = 0;
             }
-            ui.horizontal(|ui|{
-                ui.spacing_mut().item_spacing.x = 1.0;
-                ui.spacing_mut().item_spacing.y = 2.0;
-                ui.label("Configure Settings");
-                let mut my_string = " ";
-               
-                
-
-             }
-            );
-            ui.horizontal(|ui|{
+          
+            
+            ui.label("Add Sound Commands");
+            
+            
+            ui.vertical(|ui|{
+                ui.separator();
+                ui.label("Command name:");
+                let command_name = ui.add_sized([100.0,20.0], egui::TextEdit::singleline(&mut self.command_name));
+                if command_name.changed(){
+                    let some_command = true;
+                }
+            });
+            ui.vertical(|ui|{
                 //let mut sound_path =" ";
                 
-                let sound_path =ui.add_sized([200.0, 20.0], egui::Button::new("Sounds")); //ui.text_edit_singleline(&mut self.sfx);
+                //let sound_settings_sep = ui.add(egui::Separator::horizontal(Self));
+                let sound_path =ui.add_sized([200.0, 20.0], egui::Button::new("Select .MP3")); //ui.text_edit_singleline(&mut self.sfx);
                 if sound_path.clicked(){
                     let path = FileDialog::new()
                         .set_location("~/Desktop")
@@ -88,19 +94,17 @@ impl eframe::App for MyEguiApp{
                         .show_confirm()
                         .unwrap();
                     if yes{
-                        //todo 
+                        //todo pathing from selected file path to default /src/sounds folder and rename file to &mut command_name
+                        
                         let mut path_confirm = true;
                     }
                 }
             });
-            ui.horizontal(|ui|{
-                ui.label("Command name:");
-                let command_name = ui.add_sized([100.0,20.0], egui::TextEdit::singleline(&mut self.command_name));
-                if command_name.changed(){
-                    let some_command = true;
-                }
-            });
-            ui.horizontal(|ui|{
+            ui.add_space(10.00);
+            ui.label("Twitch Bot Settings");
+            ui.separator();
+            ui.vertical(|ui|{
+                
                 ui.label("TTV name:");
                 let channel_name = ui.add_sized([100.00, 20.0], egui::TextEdit::singleline(&mut self.ttv));//text_edit_singleline(&mut self.ttv);
                 if channel_name.changed(){
