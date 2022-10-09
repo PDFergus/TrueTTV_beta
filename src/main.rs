@@ -132,7 +132,7 @@ impl eframe::App for MyEguiApp{
            
             ui.add_space(10.00);
             ui.label("Twitch Bot Settings");
-            ui.separator();
+            ui.add_sized([100,2], egui::Separator::default());//separator();
             ui.vertical(|ui|{
                 
                 ui.label("TTV name:");
@@ -248,18 +248,18 @@ impl eframe::App for MyEguiApp{
 
         });
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("Hello World!");
+            ui.heading("Hello Gamers!");
             
             let intro_info = ui.add_space(40.0);
             ui.label("  Hello, and welcome to True Twitch.TV. A streamer Focused Solution for your cloud based woes,
 
-            keep in mind that this project is in early developement and as a result may have a few *bugs*
-            Lets start with a tour. on the left is the basic configuration settings.
-            using the Add Sounds button and the Command name field in conjunction will make a new sound command from any mp3 file! just like magic! 
-            after the simple command adding there are configuration options available for the Bit Bot, Sub Bot, and Sound Bot Enabled. Bellow is the IRC Reader so you wont have to keep six windows open to know everything is running!
-            Future updates hope to see this large and lovely area filled with a ffmpeg video codec for streaming your content to know what you are watching
+                keep in mind that this project is in early developement and as a result may have a few *bugs*
+                Lets start with a tour. on the left is the basic configuration settings.
+                using the Add Sounds button and the Command name field in conjunction will make a new sound command from any mp3 file! just like magic! 
+                after the simple command adding there are configuration options available for the Bit Bot, Sub Bot, and Sound Bot Enabled. Bellow is the IRC Reader so you wont have to keep six windows open to know everything is running!
+                Future updates hope to see this large and lovely area filled with a ffmpeg video codec for streaming your content to know what you are watching
             
-            Big Love Gamer Energy, Pete");
+                Big Love Gamer Energy, Pete");
             
             ui.add_sized(ui.available_size(), egui::TextEdit::singleline(&mut self.info_string));
             
