@@ -22,7 +22,7 @@ use tokio::time::{sleep, Duration};
 
 //mod recorder;
 #[tokio::main]
-pub async fn twitch_irc() {
+pub async fn twitch_sub() {
     
     let config = ClientConfig::default();
     let (mut incoming_messages, client) =
@@ -33,10 +33,10 @@ pub async fn twitch_irc() {
             match message{
                 ServerMessage::Privmsg(msg) =>{
                     let mut msg_text_clone = msg.message_text.clone().to_owned();
-                         tokio::spawn(async move{
-                                   play_sounds(&msg_text_clone).await;
-                               });
-                               sleep(Duration::from_millis(10)).await;
+                         //tokio::spawn(async move{
+                           //        play_sounds(&msg_text_clone).await;
+                             //  });
+                              // sleep(Duration::from_millis(10)).await;
                     
                     for badge in msg.badges{
                         for word in msg.message_text.split(" "){
@@ -171,21 +171,7 @@ async fn play_sounds(msg_text_clone: &str){
         
 
     }
-    //std::env::set_current_dir("/twitch_irc").expect("Can Not Find Directory Folder");
-    //sleep(time::Duration::from_millis(10)).await;
-    //let mut file_dir = "sounds/".to_owned();
-    //let mut file_name = borrowed_word_copy.to_owned();
-    //let mut file_type = ".mp3";
-    //file_name.push_str(file_type);
-    //sleep(time::Duration::from_millis(10)).await;
-    //let (_stream, stream_handle) = OutputStream::try_default().unwrap();
-    //let sink = Sink::try_new(&stream_handle).unwrap();
-    //let file = BufReader::new(File::open(file_name).expect("Could Not Find File"));
-    //let source= Decoder::new(file).expect("No Matching Audio File in directory");
-    //stream_handle.play_raw(source.convert_samples());
-    //sink.append(source);
-    //sink.sleep_until_end();
-    
+  
 }
 
 async fn play_yell(){
