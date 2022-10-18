@@ -95,10 +95,22 @@ impl MyEguiApp {
 
 impl eframe::App for MyEguiApp{
 
+   
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame){
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui|{
             ui.menu_button("file", |ui|{
                 if ui.button("Quit").clicked(){
+                    let mut is_on = false;
+                    let json = json!({
+                    "bot_status": &is_on,
+                    });
+
+                std::fs::write(
+                    "on_state.json",
+                    serde_json::to_string_pretty(&json).unwrap(),
+                ).unwrap();
+
+            
                     let mut is_on = false;
                     let json = json!({
                     "bot_status": &is_on,
