@@ -18,7 +18,7 @@ use parse_config::parse_sub_bot;
 use std::env::set_current_dir;
 use std::fs::{File, self};
 use std::path::PathBuf;
-use std::thread;
+use std::thread::{self, current};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::json;
@@ -48,6 +48,7 @@ struct User_Name{
 
 #[derive(Default)]
 struct MyEguiApp{
+    current_ttv:String,
     ttv:String,
     value: f32,
     sfx:String,
@@ -73,6 +74,9 @@ struct MyEguiApp{
     is_on:bool,
     state:String,
     sound_on:String,
+    bit_on:String,
+    sub_on:String,
+
     
    
 
@@ -185,27 +189,22 @@ impl eframe::App for MyEguiApp{
             }
             let command_name = ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.state));
             let status = parse_config::parse_on_status();
-            
-                
-                
-                
-            
-            
-            
-          
-            
-            ui.label("Add Sound Commands");
-            
-            
+            ui.add_space(10.0);
+            ui.heading("Add Sound Commands");
+             
             ui.vertical(|ui|{
-                ui.separator();
-                ui.label("Command name:");
-                let command_name = ui.add_sized([100.0,20.0], egui::TextEdit::singleline(&mut self.command_name));
-                if command_name.changed(){
-                    let some_command = true;
-                    let temp_command_name = &mut self.command_name.to_string();
-                    let mut new_filename = temp_command_name.push_str(".mp3");
-                }
+               // ui.separator();
+               ui.horizontal(|ui|{
+                    ui.label("Command name:");
+                    let command_name = ui.add_sized([100.0,20.0], egui::TextEdit::singleline(&mut self.command_name));
+                    if command_name.changed(){
+                        let some_command = true;
+                        let temp_command_name = &mut self.command_name.to_string();
+                        let mut new_filename = temp_command_name.push_str(".mp3");
+                    }
+
+               });
+                
             });
             ui.vertical(|ui|{
                 //let mut sound_path =" ";
@@ -223,18 +222,32 @@ impl eframe::App for MyEguiApp{
             });
            
             ui.add_space(10.00);
-            ui.label("Twitch Bot Settings");
-            ui.separator();
+            ui.heading("Twitch Bot Settings");
+           // ui.separator();
             ui.vertical(|ui|{
-                
-                ui.label("TTV name:");
-                let channel_name = ui.add_sized([100.00, 20.0], egui::TextEdit::singleline(&mut self.ttv));//text_edit_singleline(&mut self.ttv);
-                if channel_name.changed(){
+                self.current_ttv = parse_config::parse_user();
+                    let mut current = self.current_ttv.clone();
+                    ui.horizontal(|ui|{
+                        ui.label("current twitch:");
+                        ui.label(current);
+                    });
+                    
+                ui.horizontal(|ui|{
+                    ui.label("TTV name:");
+                    let channel_name = ui.add_sized([100.00, 20.0], egui::TextEdit::singleline(&mut self.ttv));//text_edit_singleline(&mut self.ttv);
+                    if channel_name.changed(){
                     //do_something(path)
-                    let some_thing_happens_again  = true;
-                }
+                    
+                        let some_thing_happens_again  = true;
+                    }
+                    
+                });
+                
+                
             });
-            ui.separator();
+            //below is the only way i could figure out how to dynamically shift the info on the page, by derefrencing a mutable pointer and re asserting the value based off of the default.json
+           // ui.separator();
+           ui.add_space(20.0);
             ui.vertical(|ui|{
                     ui.label("Enable Sound Bot: ");
                     ui.vertical(|ui|{
@@ -255,117 +268,120 @@ impl eframe::App for MyEguiApp{
 
                     }
 
-                    
-                
-                 
-                
-                let sound_state = ui.add_sized([200.0,20.0], egui::Button::new("enable"));//checkbox(&mut self.sound_bot, "Checked");
-                
-                
-                
-                if sound_state.clicked(){
-                    &mut *self.sound_on;
-                    let mut sound_state = "on";
-                    let mut state = sound_state.to_string();
-                    self.sound_on = state.clone();
-                    self.sound_bot = true;
+
+                ui.horizontal(|ui|{
+                    let sound_state = ui.add_sized([50.0,20.0], egui::Button::new("enable"));//checkbox(&mut self.sound_bot, "Checked");
+                    if sound_state.clicked(){
+                        &mut *self.sound_on;
+                        let mut sound_state = "on";
+                        let mut state = sound_state.to_string();
+                        self.sound_on = state.clone();
+                        self.sound_bot = true;
 
                     
-                }
+                    }
 
-                let sound_state_off = ui.add_sized([200.0,20.0], egui::Button::new("disabled"));
-                if sound_state_off.clicked(){
-                   &mut *self.sound_on;
-                    let mut sound_state = "off";
-                    let mut sound_state = sound_state.to_string();
-                    self.sound_on = sound_state.clone();
-                    self. sound_bot = false;
-                   // self.sound_on = cstate.clone();
+                    let sound_state_off = ui.add_sized([50.0,20.0], egui::Button::new("disabled"));
+                    if sound_state_off.clicked(){
+                        &mut *self.sound_on;
+                        let mut sound_state = "off";
+                        let mut sound_state = sound_state.to_string();
+                        self.sound_on = sound_state.clone();
+                        self. sound_bot = false;
+                        // self.sound_on = cstate.clone();
                         
-                    self.sound_bot = false;
-                }
-                
-                
+                        self.sound_bot = false;
+                    }
+
+                });                
             });
-            
-               
-           
-            
+
             ui.vertical(|ui|{
                 ui.label("Enable Bit Bot");
-                //checkbox(&mut self.bit_bot, "Checked");
                 
-                ui.horizontal(|ui|{
-                   
-                    let texture = self.status_on.get_or_insert_with(||{
-                        let status = parse_config::parse_bit_bot();
-                        if status == false{
-                            ui.ctx().load_texture(
-                                "Status Off", 
-                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 245,  89,  47)) ,
-                                egui::TextureFilter::Linear)}
-                        else{
-                            ui.ctx().load_texture(
-                            
-                                "Status On", 
-                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 103,   245,   47)) ,
-                                egui::TextureFilter::Linear)
-                        }
-                    });
-                    let texture_clone = texture.clone();
-                    ui.add(egui::Image::new(texture,texture_clone.size_vec2()));
-                    
+                ui.vertical(|ui|{
+                   let bit_status = ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.bit_on));
                 });
-                let bit_state =  ui.add_sized([200.0,20.0], egui::Button::new("enable"));
-                if bit_state.clicked(){
-                    //todo add to cfg file as all off as a base
-                    self.bit_bot = true;
+                let mut parse_bb_state = parse_config::parse_bit_bot();
+                if parse_bb_state == false{
+                    &mut *self.bit_on;
+                    let mut off_state = "off";
+                    let mut off_state = off_state.to_string();
+                    self.bit_on = off_state.clone();
+                }else{
+                    &mut *self.bit_on;
+                    let mut on_state = "on";
+                    let mut on_state = on_state.to_string();
+                    self.bit_on = on_state.clone();
                 }
-                let bit_state_off = ui.add_sized([200.0,20.0], egui::Button::new("disable"));
-                    if bit_state_off.clicked(){
-                        self.bit_bot = false;
+                ui.horizontal(|ui|{
+                    let bit_state =  ui.add_sized([50.0,20.0], egui::Button::new("enable"));
+                    if bit_state.clicked(){
+                    //todo add to cfg file as all off as a base
+                        &mut *self.bit_on;
+                        let mut bit_state = "on";
+                        let mut state = bit_state.to_string();
+                        self.bit_on = state.clone();
+                        self.bit_bot = true;
                     }
                 
-            });
+                    let bit_state_off = ui.add_sized([50.0,20.0], egui::Button::new("disable"));
+                    if bit_state_off.clicked(){
+                        &mut *self.bit_on;
+                        let mut bit_state_off = "off";
+                        let mut bit_state_off = bit_state_off.to_string();
+                        self.bit_on = bit_state_off.clone();
+                        self.bit_bot = false;
+                    }
+
+                });
+                
+                
+            
+        });
             
             ui.vertical(|ui|{
                 ui.label("Enable Sub Bot?");
                 
                 
-                ui.horizontal(|ui|{
+                ui.vertical(|ui|{
+                  let sub_status =  ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.sub_on));
                    
-                    let texture = self.status_on.get_or_insert_with(||{
-                        let status = parse_config::parse_sub_bot();
-                        if status == false{
-                            ui.ctx().load_texture(
-                                "Status Off", 
-                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 245,  89,  47)) ,
-                                egui::TextureFilter::Linear)}
-                        else{
-                            ui.ctx().load_texture(
-                            
-                                "Status On", 
-                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 103,   245,   47)) ,
-                                egui::TextureFilter::Linear)
-                        }
-                    });
-                    let texture_clone = texture.clone();
-                    ui.add(egui::Image::new(texture,texture_clone.size_vec2()));
                     
                 });
-                let sub_state = ui.add_sized([200.0,20.0], egui::Button::new("enable"));//checkbox(&mut self.sub_bot, "Checked");
-                if sub_state.clicked(){
-                    
-                    
-                   self.sub_bot = true;
-                    
-
+                let mut status = parse_config::parse_sub_bot();
+                if status == false{
+                    &mut *self.sub_on;
+                    let mut off_state = "off";
+                    let mut off_state = off_state.to_string();
+                    self.sub_on = off_state.clone();
+                }else{
+                    &mut *self.sub_on;
+                    let mut on_state = "on";
+                    let mut on_state = on_state.to_string();
+                    self.sub_on = on_state.clone();
                 }
+                ui.horizontal(|ui|{
+                    let sub_state = ui.add_sized([50.0,20.0], egui::Button::new("enable"));//checkbox(&mut self.sub_bot, "Checked");
+                        if sub_state.clicked(){
+                        &mut *self.sub_on;
+                        let mut on_state = "on";
+                        let mut on_state = on_state.to_string();
+                        self.sub_on = on_state.clone();
+                        self.sub_bot = true;   
+                    }
                 
-                let sub_state_off = ui.add_sized([200.0,20.0], egui::Button::new("disable"));
-                if sub_state_off.clicked(){
-                     self.sub_bot = false;
-                }
+                    let sub_state_off = ui.add_sized([50.0,20.0], egui::Button::new("disable"));
+                    if sub_state_off.clicked(){
+                        &mut *self.sub_on;
+                        let mut off_state = "off";
+                        let mut off_state = off_state.to_string();
+                        self.sub_on = off_state.clone();
+                        self.sub_bot = false;
+                    }
+
+                });
+                
                 
                 
             });
@@ -455,15 +471,11 @@ impl eframe::App for MyEguiApp{
             ui.heading("Hello Gamers!");
             
             let intro_info = ui.add_space(40.0);
-            ui.label("  Hello, and welcome to True Twitch.TV. A streamer Focused Solution for your cloud based woes,
+            ui.label("  Hey its pete again with another GUI update for the bots! this should be one of the final alpha GUI layout patches.
+                as you know the idea of this bot is to give some power back to you guys, the streamers, and community members that make life so fun!
+                this upcoming patch should fix the issues with the add command button. 
 
-                keep in mind that this project is in early developement and as a result may have a few *bugs*
-                Lets start with a tour. on the left is the basic configuration settings.
-                using the Add Sounds button and the Command name field in conjunction will make a new sound command from any mp3 file! just like magic! 
-                after the simple command adding there are configuration options available for the Bit Bot, Sub Bot, and Sound Bot Enabled. B
-                ellow is the IRC Reader so you wont have to keep six windows open to know everything is running!
-                Future updates hope to see this large and lovely area filled with a ffmpeg video codec for streaming your content to know what you are watching
-            
+                
                 Big Love Gamer Energy, Pete");
             
             ui.add_sized(ui.available_size(), egui::TextEdit::singleline(&mut self.info_string));
