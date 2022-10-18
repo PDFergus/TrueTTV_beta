@@ -76,3 +76,23 @@ pub fn parse_sound_bot() -> bool{
 
     
 }
+
+pub fn parse_on_status() ->bool {
+    let file = File::open("default.json").expect("file should open read only");
+
+    let json:serde_json::Value = serde_json::from_reader(file).expect("file should be proper JSON");
+    let mut on_state =  json.get("sound_bot_enabled").expect("File should have user_name key");
+    let mut on_state = on_state.to_string();
+    let mut on_state = on_state.replace(r#"'"#,"");
+    let mut on_state = on_state.replace(r#"/"#, "");
+    let mut on_state = on_state.replace(r#"""#, "");
+    let mut on_state = on_state.trim().to_owned();
+
+    if on_state != "true"{
+        return false;
+    }
+    else{
+        return true;
+    }
+
+}

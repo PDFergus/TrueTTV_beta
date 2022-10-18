@@ -1,26 +1,35 @@
 mod file_dialog;
-mod twitch_irc_sub_bot;
+mod sub_bot;
+mod sound_bot;
+mod bit_bot;
+
+mod twitch_irc_sub_bot_complete;
+
+use twitch_irc_sub_bot_complete::twitch_irc;
+use bit_bot::twitch_bb;
+use sub_bot::twitch_sub;
+use sound_bot::twitch_sound;
+
 mod parse_config;
-use eframe::egui;
-use std::env;
+
+use eframe::egui::{self, InnerResponse};
+use eframe::epaint::Color32;
+use parse_config::parse_sub_bot;
 use std::env::set_current_dir;
-use std::fs;
-use std::fs::File;
-use std::io::prelude;
-use std::path::Path;
+use std::fs::{File, self};
 use std::path::PathBuf;
 use std::thread;
-use native_dialog::{FileDialog,MessageDialog,MessageType};
-
-use std::io::Read;
-use std::process::Command;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use serde_json::json;
 fn main() {
 
     let native_options = eframe::NativeOptions::default();
-    eframe::run_native("My egui App", native_options, Box::new(|cc| Box::new(MyEguiApp::new(cc))));
+    eframe::run_native("TrueTTV", native_options, Box::new(|cc| Box::new(MyEguiApp::new(cc))));
+}
+
+struct StatusImageOn{
+    status:Option<egui::TextureHandle>
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -53,7 +62,7 @@ struct MyEguiApp{
     font_height:f32,
     command_name:String,
     info_string:String,
-    
+    status_on:Option<egui::TextureHandle>,
     target_dir:String,
     command_name_renamer:String,
     new_filename:String,
@@ -61,6 +70,12 @@ struct MyEguiApp{
     command_file_name:String,
     command_file_name_str:String,
     path:PathBuf,
+    is_on:bool,
+    state:String,
+    sound_on:String,
+    
+   
+
     
 }
 
@@ -75,10 +90,22 @@ impl MyEguiApp {
 }
 
 impl eframe::App for MyEguiApp{
+
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame){
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui|{
             ui.menu_button("file", |ui|{
                 if ui.button("Quit").clicked(){
+                    let mut is_on = false;
+                    let json = json!({
+                    "bot_status": &is_on,
+                    });
+
+                std::fs::write(
+                    "on_state.json",
+                    serde_json::to_string_pretty(&json).unwrap(),
+                ).unwrap();
+
+            
                     frame.close();
                 }
                 //if ui.button("Add custom Script(HARD BETA)").clicked(){
@@ -92,14 +119,79 @@ impl eframe::App for MyEguiApp{
            // if ui.add_sized([400.0, 400.0], button.clicked()){
             //.button("start bots").clicked() {
              //   let mut thinggy = 0;
+             
+             
             ui.heading("Quick Settings");
+            //let mut state = "off";
+            //let mut state = state.to_string();
+            //self.state=state;
             ui.add_space(10.0);
+            let status = parse_config::parse_on_status();
+            
             let mut bot_start =ui.add_sized([200.0, 100.0], egui::Button::new("Start Bots"));
             if bot_start.clicked(){
-                thread::spawn(|| {
-                    twitch_irc_sub_bot::twitch_irc();  
-                }); 
+               // let mut is_on = true;
+                //let json = json!({
+                //    "bot_status": &is_on,
+                //});
+
+              //  std::fs::write(
+               //     "on_state.json",
+               //     serde_json::to_string_pretty(&json).unwrap(),
+              //  ).unwrap();
+
+              let mut sub_on = parse_config::parse_sub_bot();
+              let mut sound_on = parse_config::parse_sound_bot();
+              let mut bit_on =parse_config:: parse_bit_bot();
+           
+              if sub_on == true && sound_on == true && bit_on == true{
+               thread::spawn(|| {    
+                   twitch_irc_sub_bot_complete::twitch_irc();   
+                   });  
+              }
+              else if sub_on != true{
+               thread::spawn(|| {    
+                   sound_bot::twitch_sound();   
+                   });
+               thread::spawn(||{
+                   bit_bot::twitch_bb();
+               });
+               }else if sound_on != true{
+                   thread::spawn(||{
+                       bit_bot::twitch_bb();
+                   });
+                   thread::spawn(||{
+                       sub_bot::twitch_sub();
+                   });
+               }else if bit_on != true{
+                   thread::spawn(||{
+                       sound_bot::twitch_sound();
+                   });
+                   thread::spawn(||{
+                    
+                    sub_bot::twitch_sub();
+                });
+               }
+
+                let mut cstate = "";
+                let mut cstate = cstate.to_string();
+                self.state = cstate;
+
+                let mut state = "on";
+                let mut state = state.to_string();
+                self.state = state;
+                
+                
             }
+            let command_name = ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.state));
+            let status = parse_config::parse_on_status();
+            
+                
+                
+                
+            
+            
+            
           
             
             ui.label("Add Sound Commands");
@@ -132,7 +224,7 @@ impl eframe::App for MyEguiApp{
            
             ui.add_space(10.00);
             ui.label("Twitch Bot Settings");
-            ui.add_sized([100,2], egui::Separator::default());//separator();
+            ui.separator();
             ui.vertical(|ui|{
                 
                 ui.label("TTV name:");
@@ -142,41 +234,151 @@ impl eframe::App for MyEguiApp{
                     let some_thing_happens_again  = true;
                 }
             });
+            ui.separator();
+            ui.vertical(|ui|{
+                    ui.label("Enable Sound Bot: ");
+                    ui.vertical(|ui|{
+                        let command_name = ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.sound_on));
+                    });
+                    let mut status = parse_config::parse_sound_bot();
+                    if status == false{
+                        &mut *self.sound_on;
+                        let mut cstate = "off";
+                        let mut cstate = cstate.to_string();
+                        self.sound_on = cstate.clone();
+                        
+                    }else{
+                        &mut *self.sound_on;
+                        let mut sound_on_state = "on";
+                        let mut sound_on_state = sound_on_state.to_string();
+                        self.sound_on=sound_on_state.clone();
 
-            ui.horizontal(|ui|{
-                ui.label("Enable Sound Bot: ");
-                let sound_state = ui.checkbox(&mut self.sound_bot, "Checked");
-                if sound_state.changed(){
-                    let mut sound_bot = true;
+                    }
+
+                    
+                
+                 
+                
+                let sound_state = ui.add_sized([200.0,20.0], egui::Button::new("enable"));//checkbox(&mut self.sound_bot, "Checked");
+                
+                
+                
+                if sound_state.clicked(){
+                    &mut *self.sound_on;
+                    let mut sound_state = "on";
+                    let mut state = sound_state.to_string();
+                    self.sound_on = state.clone();
+                    self.sound_bot = true;
+
+                    
                 }
-            });
 
-            ui.horizontal(|ui|{
-                ui.label("Enable Bit_bot");
-                let bit_state = ui.checkbox(&mut self.bit_bot, "Checked");
-                if bit_state.changed(){
+                let sound_state_off = ui.add_sized([200.0,20.0], egui::Button::new("disabled"));
+                if sound_state_off.clicked(){
+                   &mut *self.sound_on;
+                    let mut sound_state = "off";
+                    let mut sound_state = sound_state.to_string();
+                    self.sound_on = sound_state.clone();
+                    self. sound_bot = false;
+                   // self.sound_on = cstate.clone();
+                        
+                    self.sound_bot = false;
+                }
+                
+                
+            });
+            
+               
+           
+            
+            ui.vertical(|ui|{
+                ui.label("Enable Bit Bot");
+                //checkbox(&mut self.bit_bot, "Checked");
+                
+                ui.horizontal(|ui|{
+                   
+                    let texture = self.status_on.get_or_insert_with(||{
+                        let status = parse_config::parse_bit_bot();
+                        if status == false{
+                            ui.ctx().load_texture(
+                                "Status Off", 
+                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 245,  89,  47)) ,
+                                egui::TextureFilter::Linear)}
+                        else{
+                            ui.ctx().load_texture(
+                            
+                                "Status On", 
+                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 103,   245,   47)) ,
+                                egui::TextureFilter::Linear)
+                        }
+                    });
+                    let texture_clone = texture.clone();
+                    ui.add(egui::Image::new(texture,texture_clone.size_vec2()));
+                    
+                });
+                let bit_state =  ui.add_sized([200.0,20.0], egui::Button::new("enable"));
+                if bit_state.clicked(){
                     //todo add to cfg file as all off as a base
-                    let mut bit_bot = true;
+                    self.bit_bot = true;
                 }
+                let bit_state_off = ui.add_sized([200.0,20.0], egui::Button::new("disable"));
+                    if bit_state_off.clicked(){
+                        self.bit_bot = false;
+                    }
+                
             });
-            ui.horizontal(|ui|{
+            
+            ui.vertical(|ui|{
                 ui.label("Enable Sub Bot?");
-                let sub_state = ui.checkbox(&mut self.sub_bot, "Checked");
-                if sub_state.changed(){
-                    //todo add logic to change config file
+                
+                
+                ui.horizontal(|ui|{
+                   
+                    let texture = self.status_on.get_or_insert_with(||{
+                        let status = parse_config::parse_sub_bot();
+                        if status == false{
+                            ui.ctx().load_texture(
+                                "Status Off", 
+                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 245,  89,  47)) ,
+                                egui::TextureFilter::Linear)}
+                        else{
+                            ui.ctx().load_texture(
+                            
+                                "Status On", 
+                                egui::ColorImage::new([200 ,10 ], Color32::from_rgb( 103,   245,   47)) ,
+                                egui::TextureFilter::Linear)
+                        }
+                    });
+                    let texture_clone = texture.clone();
+                    ui.add(egui::Image::new(texture,texture_clone.size_vec2()));
                     
-                    let mut sub_bot = true;
+                });
+                let sub_state = ui.add_sized([200.0,20.0], egui::Button::new("enable"));//checkbox(&mut self.sub_bot, "Checked");
+                if sub_state.clicked(){
+                    
+                    
+                   self.sub_bot = true;
                     
 
                 }
+                
+                let sub_state_off = ui.add_sized([200.0,20.0], egui::Button::new("disable"));
+                if sub_state_off.clicked(){
+                     self.sub_bot = false;
+                }
+                
+                
             });
             ui.horizontal(|ui|{
                 let edit_configs = ui.add_sized([200.0,40.0], egui::Button::new("Edit Configs"));
                 if edit_configs.clicked(){
+                    
+                    let mut temp_file = File::create("default_temp.json").unwrap();
                     let mut current_user = self.ttv.clone();
                     let mut bit_stat_config = self.bit_bot.clone();
                     let mut sub_stat_config = self.sub_bot.clone();
                     let mut sound_state_config =  self.sound_bot.clone();
+                    let bot_state_config = self.is_on.clone();
                     thread::spawn(move||{
                         //current default settings 
                         let mut default_user = parse_config::parse_user();
@@ -195,14 +397,16 @@ impl eframe::App for MyEguiApp{
                             let bit_stat = &bit_stat_config.to_string();
                             let sub_stat = &sub_stat_config.to_string();
                             let sound_stat = &sound_state_config.to_string();
+                            let bot_state = &bot_state_config.to_string();
                             let json = json!({
+                                "bot_status": &bot_state,
                                 "user_name": &current_user,
                                 "bit_bot_enabled": &bit_stat,
                                 "sub_bot_enabled": &sub_stat,
                                 "sound_bot_enabled": &sound_stat
 
                             });
-
+                            
                             std::fs::write(
                                 "default_temp.json",
                                 serde_json::to_string_pretty(&json).unwrap(),
@@ -256,7 +460,8 @@ impl eframe::App for MyEguiApp{
                 keep in mind that this project is in early developement and as a result may have a few *bugs*
                 Lets start with a tour. on the left is the basic configuration settings.
                 using the Add Sounds button and the Command name field in conjunction will make a new sound command from any mp3 file! just like magic! 
-                after the simple command adding there are configuration options available for the Bit Bot, Sub Bot, and Sound Bot Enabled. Bellow is the IRC Reader so you wont have to keep six windows open to know everything is running!
+                after the simple command adding there are configuration options available for the Bit Bot, Sub Bot, and Sound Bot Enabled. B
+                ellow is the IRC Reader so you wont have to keep six windows open to know everything is running!
                 Future updates hope to see this large and lovely area filled with a ffmpeg video codec for streaming your content to know what you are watching
             
                 Big Love Gamer Energy, Pete");
@@ -266,4 +471,43 @@ impl eframe::App for MyEguiApp{
         });
 
     }
+
+    fn save(&mut self, _storage: &mut dyn eframe::Storage) {}
+
+    fn on_close_event(&mut self) -> bool {
+        true
+    }
+
+    fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {}
+
+    fn auto_save_interval(&self) -> std::time::Duration {
+        std::time::Duration::from_secs(30)
+    }
+
+    fn max_size_points(&self) -> egui::Vec2 {
+        egui::Vec2::INFINITY
+    }
+
+    fn clear_color(&self, _visuals: &egui::Visuals) -> egui::Rgba {
+        // NOTE: a bright gray makes the shadows of the windows look weird.
+        // We use a bit of transparency so that if the user switches on the
+        // `transparent()` option they get immediate results.
+        egui::Color32::from_rgba_unmultiplied(12, 12, 12, 180).into()
+
+        // _visuals.window_fill() would also be a natural choice
+    }
+
+    fn persist_native_window(&self) -> bool {
+        true
+    }
+
+    fn persist_egui_memory(&self) -> bool {
+        true
+    }
+
+    fn warm_up_enabled(&self) -> bool {
+        false
+    }
+
+    fn post_rendering(&mut self, _window_size_px: [u32; 2], _frame: &eframe::Frame) {}
 }

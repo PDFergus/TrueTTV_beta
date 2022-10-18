@@ -1,6 +1,7 @@
 {
-  "bit_bot_enabled": "true",
+  "bit_bot_enabled": "false",
+  "bot_status": "false",
   "sound_bot_enabled": "true",
-  "sub_bot_enabled": "true",
-  "user_name": "kaedadx"
+  "sub_bot_enabled": "false",
+  "user_name": ""
 }
