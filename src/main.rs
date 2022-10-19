@@ -15,6 +15,7 @@ mod parse_config;
 use eframe::egui::{self, InnerResponse};
 use eframe::epaint::Color32;
 use parse_config::parse_sub_bot;
+use std::default;
 use std::env::set_current_dir;
 use std::fs::{File, self};
 use std::path::PathBuf;
@@ -261,9 +262,15 @@ impl eframe::App for MyEguiApp{
            // ui.separator();
            ui.add_space(20.0);
             ui.vertical(|ui|{
-                    ui.label("Enable Sound Bot: ");
+                    ui.heading("Enable Sound Bot: ");
                     ui.vertical(|ui|{
-                        let command_name = ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.sound_on));
+                        ui.horizontal(|ui|{
+
+                            ui.label("Status");
+                            let command_name = ui.add_sized([20.0,20.0], egui::TextEdit::singleline(&mut self.sound_on));
+
+                        });
+                       
                     });
                     let mut status = parse_config::parse_sound_bot();
                     if status == false{
@@ -289,6 +296,18 @@ impl eframe::App for MyEguiApp{
                         let mut state = sound_state.to_string();
                         self.sound_on = state.clone();
                         self.sound_bot = true;
+                        let mut default_sound = parse_config::parse_sound_bot();
+                        if self.sound_bot != default_sound{
+                            fs::remove_file("sound_status.json").expect("No File Found");
+                            let sound_json = json!({
+                                "sound_bot_enabled": "true"
+                            });
+                            std::fs::write(
+                                "sound_status_temp.json",
+                             serde_json::to_string_pretty(&sound_json).unwrap()
+                            ).unwrap();
+                            fs::rename("sound_status_temp.json", "sound_status.json");
+                        }
 
                     
                     }
@@ -301,18 +320,33 @@ impl eframe::App for MyEguiApp{
                         self.sound_on = sound_state.clone();
                         self. sound_bot = false;
                         // self.sound_on = cstate.clone();
+                        let mut default_sound = parse_config::parse_sound_bot();
+                        if self.sound_bot != default_sound{
+                            fs::remove_file("sound_status.json").expect("No File Found");
+                            let sound_json = json!({
+                                "sound_bot_enabled": "false"
+                            });
+                            std::fs::write(
+                                "sound_status_temp.json", 
+                                serde_json::to_string_pretty(&sound_json).unwrap()
+                            ).unwrap();
+                            fs::rename("sound_status_temp.json", "sound_status.json");
+                        }
                         
-                        self.sound_bot = false;
                     }
 
                 });                
             });
 
             ui.vertical(|ui|{
-                ui.label("Enable Bit Bot");
+                ui.heading("Enable Bit Bot");
                 
                 ui.vertical(|ui|{
-                   let bit_status = ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.bit_on));
+                    ui.horizontal(|ui|{
+                        ui.label("Status");
+                        let bit_status = ui.add_sized([20.0,20.0], egui::TextEdit::singleline(&mut self.bit_on));
+                    });
+                   
                 });
                 let mut parse_bb_state = parse_config::parse_bit_bot();
                 if parse_bb_state == false{
@@ -326,6 +360,7 @@ impl eframe::App for MyEguiApp{
                     let mut on_state = on_state.to_string();
                     self.bit_on = on_state.clone();
                 }
+
                 ui.horizontal(|ui|{
                     let bit_state =  ui.add_sized([50.0,20.0], egui::Button::new("enable"));
                     if bit_state.clicked(){
@@ -335,6 +370,20 @@ impl eframe::App for MyEguiApp{
                         let mut state = bit_state.to_string();
                         self.bit_on = state.clone();
                         self.bit_bot = true;
+                        let mut bit_stat_config = self.bit_bot.clone();
+                        let mut default_bit = parse_config::parse_bit_bot();
+                        if self.bit_bot != default_bit{
+                            fs::remove_file("bb_status.json");
+                            let bit_json = json!({
+                                "bit_bot_enabled": "true"
+                            });
+                            std::fs::write(
+                                "bb_status_temp.json",
+                                serde_json::to_string_pretty(&bit_json).unwrap()
+                            ).unwrap();
+                            fs::rename("bb_status_temp.json","bb_status.json");
+                        }
+
                     }
                 
                     let bit_state_off = ui.add_sized([50.0,20.0], egui::Button::new("disable"));
@@ -344,20 +393,36 @@ impl eframe::App for MyEguiApp{
                         let mut bit_state_off = bit_state_off.to_string();
                         self.bit_on = bit_state_off.clone();
                         self.bit_bot = false;
+                        let mut default_bit = parse_config::parse_bit_bot();
+                        if self.bit_bot != default_bit{
+                            fs::remove_file("bb_status.json");
+                            let bit_json = json!({
+                                "bit_bot_enabled": "false"
+                            });
+                            std::fs::write(
+                                "bb_status_temp.json", 
+                                serde_json::to_string_pretty(&bit_json).unwrap()
+                        ).unwrap();
+                        fs::rename("bb_status_temp.json", "bb_status.json");
+                        }
                     }
 
-                });
-                
-                
-            
+                });               
         });
-            
+
+            ///sub bot UI code below
             ui.vertical(|ui|{
-                ui.label("Enable Sub Bot?");
+                ui.add_space(5.0);
+                ui.heading("  Enable Sub Bot?");
                 
                 
                 ui.vertical(|ui|{
-                  let sub_status =  ui.add_sized([50.0,20.0], egui::TextEdit::singleline(&mut self.sub_on));
+                  ui.horizontal(|ui|{
+                        ui.label("  status");
+                        //ui.label(&mut self.sub_on.to_string());
+                        let sub_status =  ui.add_sized([20.0,20.0], egui::TextEdit::singleline(&mut self.sub_on));
+                  });  
+                  
                    
                     
                 });
@@ -373,6 +438,7 @@ impl eframe::App for MyEguiApp{
                     let mut on_state = on_state.to_string();
                     self.sub_on = on_state.clone();
                 }
+
                 ui.horizontal(|ui|{
                     let sub_state = ui.add_sized([50.0,20.0], egui::Button::new("enable"));//checkbox(&mut self.sub_bot, "Checked");
                         if sub_state.clicked(){
@@ -380,7 +446,24 @@ impl eframe::App for MyEguiApp{
                         let mut on_state = "on";
                         let mut on_state = on_state.to_string();
                         self.sub_on = on_state.clone();
-                        self.sub_bot = true;   
+                        self.sub_bot = true;
+                        let mut sub_stat_config = self.sub_bot.clone();   
+                        
+                        let mut default_sub = parse_config::parse_sub_bot();
+                        if self.sub_bot != default_sub{
+                            fs::remove_file("sb_status.json").expect("No file found");
+                            let sub_json = json!({
+                                "sub_bot_enabled":"true"
+                            });
+                            std::fs::write(
+                                "sb_status_temp.json", 
+                                serde_json::to_string_pretty(&sub_json).unwrap(),
+                            ).unwrap();
+                            
+                            fs::rename("sb_status_temp.json","sb_status.json").unwrap();
+
+
+                        }
                     }
                 
                     let sub_state_off = ui.add_sized([50.0,20.0], egui::Button::new("disable"));
@@ -390,6 +473,21 @@ impl eframe::App for MyEguiApp{
                         let mut off_state = off_state.to_string();
                         self.sub_on = off_state.clone();
                         self.sub_bot = false;
+                        let mut default_sub = parse_config::parse_sub_bot();
+                        if self.sub_bot != default_sub{
+                            fs::remove_file("sb_status.json").expect("No file found");
+                            let sub_json = json!({
+                                "sub_bot_enabled": "false"
+
+                            });
+                            std::fs::write(
+                                "sb_status_temp.json",
+                                serde_json::to_string_pretty(&sub_json).unwrap(),
+                            ).unwrap();
+                            
+                            fs::rename("sb_status_temp.json","sb_status.json").unwrap();
+
+                        }
                     }
 
                 });

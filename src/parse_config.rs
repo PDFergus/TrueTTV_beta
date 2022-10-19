@@ -13,12 +13,17 @@ pub fn parse_user() -> String{
     let user_name =user_name.replace(r#"/"#, "");
     let user_name = user_name.replace(r#"""#, "");
     let user_name = user_name.trim().to_owned();
-
-    return user_name;
+    if user_name != ""{
+        return user_name;
+    }else{
+        let mut thing ="No User Found on Default.JSON";
+        let mut thing = thing.to_string();
+        return thing;
+    }
 }
 
 pub fn parse_bit_bot() -> bool{
-    let file = File::open("default.json").expect("file should open read only");
+    let file = File::open("bb_status.json").expect("file should open read only");
 
     let json:serde_json::Value = serde_json::from_reader(file).expect("file should be proper JSON");
     let bit_stat =  json.get("bit_bot_enabled").expect("File should have user_name key");
@@ -37,7 +42,7 @@ pub fn parse_bit_bot() -> bool{
 }
 
 pub fn parse_sub_bot() -> bool{
-    let file = File::open("default.json").expect("file should open read only");
+    let file = File::open("sb_status.json").expect("file should open read only");
 
     let json:serde_json::Value = serde_json::from_reader(file).expect("file should be proper JSON");
     let mut sub_stat =  json.get("sub_bot_enabled").expect("File should have user_name key");
@@ -57,7 +62,7 @@ pub fn parse_sub_bot() -> bool{
 }
 
 pub fn parse_sound_bot() -> bool{
-    let file = File::open("default.json").expect("file should open read only");
+    let file = File::open("sound_status.json").expect("file should open read only");
 
     let json:serde_json::Value = serde_json::from_reader(file).expect("file should be proper JSON");
     let mut sound_stat =  json.get("sound_bot_enabled").expect("File should have user_name key");
